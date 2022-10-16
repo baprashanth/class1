@@ -1,0 +1,131 @@
+AWS IAM Policies with Examples
+==============================
+You know, Administrator adds the users, the groups, authorizes the users for the resources and so on… It is up to an Administrator to allow access and to regulate it. In AWS, the IAM service does this for you. Root user is an only Administrator at the launch of your AWS account. It is not practical to approach him for every simple user access. No second admin!!! This forces the root user to create delegated administrators for the set of resources, restrict the users in terms of Region, IP address, S3 buckets, etc. We can see them with some examples.
+AWS Policies are of two kinds.
+Identity-based policies: The identity-based policy is the one that can be attached directly with AWS identities like user, group or a role. IAM policy is an example of that. These policies can be AWS managed or a customer-managed.
+Resource-based policies: Resource-based policies are the ones which can be directly attached to the AWS resource like S3( called Amazon S3 bucket policy). Resource-based policies are available only for certain services.
+IAM Policy Structure
+There are two ways you can create IAM policies from IAM web console. Visual Editor and a character-based JSON policy editor. However, we focus on the JSON policy which can give fine-grained customized control over the resources. Once the policy is created it can be attached to user, group or role. The JSON policy document consists of the following elements:
+Effect –Allow or Deny access to the resource is decided by Effect (Allow/Deny)
+Action — A set of service-specific parameters (like “iam: CreateUser”).
+Resource — Resource names (like “arn:aws:s3:::conf-* “)
+Condition (Optional) — Grant conditions (like “aws: RequestedRegion”: “ap-south-1”)
+IAM Policy Evaluation
+By default, all requests are denied except for root.
+An explicit allow overrides this default.
+An explicit deny overrides any allows.
+Note: if you have configured AWS Organization with SCP ( Service Control Policies), it filters the access to a service level. IAM policy cannot override SCP.
+Let us see some of the useful IAM policies.
+User related: Creation of a delegated Account Operator
+Policy 1: Delegate read permission for IAM components.
+{
+“Version”: “2012–10–17”,
+“Statement”: {
+“Effect”: “Allow”,
+“Action”: [
+“iam:Get*”,
+“iam:List*”
+],
+“Resource”: “*”
+}
+}
+Policy 2: Delegates Account Operator who can create the user. Remember, that he is not yet been given right to add the user to a group yet. (for that attach policy 3)
+{
+"Version": "2012-10-17",
+"Statement": [
+{
+"Effect": "Allow",
+"Action": [
+"iam:ListUsers",
+"iam:ListGroups",
+"iam:GetGroup",
+"iam:CreateUser",
+"iam:UpdateUser",
+"iam:DeleteUser",
+"iam:CreateVirtualMFADevice",
+"iam:EnableMFADevice",
+"iam:DeactivateMFADevice",
+"iam:DeleteVirtualMFADevice",
+"iam:CreateLoginProfile",
+"iam:UpdateLoginProfile",
+"iam:DeleteLoginProfile"
+],
+"Resource": "*"
+},
+{
+"Effect": "Allow",
+"Action": [
+"iam:GetAccount*",
+"iam:ListAccount*"
+],
+"Resource": "*"
+}
+]
+}
+Policy 3: Delegates Account Operator to add the user to groups Developers and Operators only. (you may have to combine above two policies to get all the relevant permissions)
+{
+“Version”: “2012–10–17”,
+“Statement”: {
+“Effect”: “Allow”,
+“Action”: [
+“iam:AddUserToGroup”,
+“iam:RemoveUserFromGroup”,
+“iam:GetGroup”
+],
+“Resource”: [
+“arn:aws:iam::609103258633:group/Developers”,
+“arn:aws:iam::609103258633:group/Operators”
+]
+}
+}
+Region related
+Policy 4: User is allowed to access EC2 resources from ap-south-1 ( Mumbai) only
+{
+“Version”: “2012–10–17”,
+“Statement”: [
+{
+“Effect”: “Allow”,
+“Action”: [
+“ec2:*”
+],
+“Resource”: “*”,
+“Condition”: {
+“StringEquals”: {
+“aws:RequestedRegion”: “ap-south-1”
+}
+}
+}
+]
+}
+Policy 5: EC2 service is available only when the user accesses the AWS web console from an IP address A.B.C.D(replace A.B.C.D with your public IP )
+{
+“Version”: “2012–10–17”,
+“Statement”: {
+“Effect”: “Allow”,
+“Action”: “EC2:*”,
+“Resource”: “*”,
+“Condition”: {
+“IpAddress”: {
+“aws:SourceIp”: [
+“192.168.0.1”
+]
+}
+}
+}
+}
+S3 Related
+Policy 6: A power user is prevented from accessing/deleting any bucket starting with the name “conf-“. Assuming the user has full permission for the bucket before applying this policy.
+{
+“Version”: “2012–10–17”,
+“Statement”: [
+{
+“Sid”: “VisualEditor1”,
+“Effect”: “Deny”,
+“Action”: “s3:*”,
+“Resource”: [
+“arn:aws:s3:::conf-*”,
+“arn:aws:s3:::conf-*/*”
+]
+}
+]
+}
